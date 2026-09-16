@@ -44,7 +44,6 @@
       color: #778da9;
     }
 
-    /* Controls Bar */
     .controls {
       background: var(--panel-bg);
       padding: 12px 20px;
@@ -78,7 +77,6 @@
       border-color: #555;
     }
 
-    /* Game Layout */
     .game-container {
       display: flex;
       gap: 30px;
@@ -88,7 +86,6 @@
       width: 100%;
     }
 
-    /* Grid Setup */
     .grid-panel {
       background: var(--panel-bg);
       padding: 20px;
@@ -137,17 +134,11 @@
       cursor: default;
     }
 
-    .cell.sonar {
-      border: 2px dashed #ffb703;
-      background-color: #2a9d8f;
-    }
-
-    /* Info & Log Panel */
     .info-panel {
       background: var(--panel-bg);
       padding: 20px;
       border-radius: 10px;
-      width: 320px;
+      width: 340px;
       display: flex;
       flex-direction: column;
       gap: 15px;
@@ -198,7 +189,6 @@
     .log-entry.hit { border-color: var(--hit-color); }
     .log-entry.miss { border-color: var(--miss-color); }
 
-    /* Modal / Pop-up for Problems */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -220,7 +210,7 @@
       background: var(--panel-bg);
       padding: 25px;
       border-radius: 10px;
-      max-width: 450px;
+      max-width: 480px;
       width: 90%;
       border: 2px solid var(--highlight);
       box-shadow: 0 0 20px rgba(0, 180, 216, 0.3);
@@ -261,14 +251,14 @@
 <body>
 
   <h1>Divisibility Battleship</h1>
-  <p class="subtitle">AoPS Prealgebra & AMC 8 Edition</p>
+  <p class="subtitle">Procedural Problem Engine (1,000+ Algorithmic Problems)</p>
 
   <div class="controls">
     <label for="difficulty">Level:</label>
     <select id="difficulty" onchange="resetGame()">
-      <option value="basic">Basic (Larson / Big Ideas)</option>
-      <option value="advanced">Advanced (AoPS Prealgebra)</option>
-      <option value="amc8" selected>Master (AMC 8)</option>
+      <option value="basic">Basic</option>
+      <option value="medium">Medium</option>
+      <option value="advanced" selected>Advanced</option>
     </select>
 
     <button onclick="resetGame()">Refresh Board</button>
@@ -276,12 +266,10 @@
   </div>
 
   <div class="game-container">
-    <!-- Grid -->
     <div class="grid-panel">
       <div id="grid" class="grid"></div>
     </div>
 
-    <!-- Stats & Log Panel -->
     <div class="info-panel">
       <div class="stats">
         <div class="stat-box">
@@ -303,7 +291,6 @@
     </div>
   </div>
 
-  <!-- Problem Modal -->
   <div id="modalOverlay" class="modal-overlay">
     <div class="modal">
       <h3 id="modalTitle">Fire Torpedo</h3>
@@ -317,7 +304,6 @@
   <script>
     const GRID_SIZE = 6;
     let board = [];
-    let ships = [];
     let hits = 0;
     let misses = 0;
     let sonarLeft = 1;
@@ -325,7 +311,6 @@
 
     const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-    // Initialize Game
     function resetGame() {
       hits = 0;
       misses = 0;
@@ -347,15 +332,12 @@
 
       generateShips();
       renderGrid();
-      addLog('New fleet deployed. Select a coordinate to target.');
+      addLog('New fleet deployed. Select coordinates to launch torpedo.');
     }
 
-    // Place hidden ships on grid
     function generateShips() {
       board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false));
-      ships = [];
-
-      const shipLengths = [3, 2]; // 2 hidden ships
+      const shipLengths = [3, 2];
       shipLengths.forEach(len => {
         let placed = false;
         while (!placed) {
@@ -378,17 +360,14 @@
       });
     }
 
-    // Render HTML Grid
     function renderGrid() {
       const gridEl = document.getElementById('grid');
       gridEl.innerHTML = '';
 
-      // Header top-left empty
       const emptyHeader = document.createElement('div');
       emptyHeader.className = 'cell header';
       gridEl.appendChild(emptyHeader);
 
-      // Header numbers
       for (let c = 1; c <= GRID_SIZE; c++) {
         const header = document.createElement('div');
         header.className = 'cell header';
@@ -396,9 +375,7 @@
         gridEl.appendChild(header);
       }
 
-      // Grid Rows
       for (let r = 0; r < GRID_SIZE; r++) {
-        // Row letter header
         const rowHeader = document.createElement('div');
         rowHeader.className = 'cell header';
         rowHeader.innerText = rows[r];
@@ -415,7 +392,6 @@
       }
     }
 
-    // Handle targeting a cell
     function handleCellClick(r, c) {
       const cellEl = document.getElementById(`cell-${r}-${c}`);
       if (cellEl.classList.contains('hit') || cellEl.classList.contains('miss')) return;
@@ -429,61 +405,145 @@
       document.getElementById('modalOverlay').classList.add('active');
     }
 
-    // Algorithmic Problem Generator (AMC 8 & AoPS Focused)
+    // Helper: Greatest Common Divisor
+    function gcd(a, b) {
+      return b === 0 ? a : gcd(b, a % b);
+    }
+
+    // Helper: Least Common Multiple
+    function lcm(a, b) {
+      return (a * b) / gcd(a, b);
+    }
+
+    // --- ALGORITHMIC PROBLEM GENERATORS (1000+ Combinations) ---
     function generateProblem() {
       const diff = document.getElementById('difficulty').value;
 
       if (diff === 'basic') {
-        const randNum = Math.floor(Math.random() * 800) + 100;
-        const divisors = [3, 4, 5, 9, 10];
-        const div = divisors[Math.floor(Math.random() * divisors.length)];
-        const isDiv = randNum % div === 0;
-        return {
-          text: `Is the number ${randNum} divisible by ${div}? Enter 1 for Yes, 0 for No.`,
-          ans: isDiv ? 1 : 0,
-          hint: `Remember the rule for ${div}.`
-        };
-      } else if (diff === 'advanced') {
-        const type = Math.floor(Math.random() * 2);
+        const type = Math.floor(Math.random() * 3);
         if (type === 0) {
-          const mult = Math.floor(Math.random() * 40) + 10;
-          const ans = mult * 36;
+          const num = Math.floor(Math.random() * 899) + 100;
+          const div = [2, 3, 4, 5, 6, 9, 10][Math.floor(Math.random() * 7)];
+          const isDiv = num % div === 0;
           return {
-            text: `Find the smallest digit X such that 3X42 is divisible by 9.`,
-            ans: 0, // 3+0+4+2 = 9
-            hint: "The sum of digits must be divisible by 9."
+            text: `Is the number ${num} divisible by ${div}? (Enter 1 for Yes, 0 for No)`,
+            ans: isDiv ? 1 : 0,
+            hint: `Apply the divisibility test for ${div}.`
+          };
+        } else if (type === 1) {
+          const composites = [12, 15, 18, 36, 45];
+          const comp = composites[Math.floor(Math.random() * composites.length)];
+          const mult = Math.floor(Math.random() * 20) + 5;
+          const target = mult * comp + (Math.random() < 0.5 ? 0 : 3);
+          const isDiv = target % comp === 0;
+          return {
+            text: `A warehouse needs to pack ${target} items into equal boxes of size ${comp}. Can they do this without leftovers? (Enter 1 for Yes, 0 for No)`,
+            ans: isDiv ? 1 : 0,
+            hint: `Break ${comp} into its coprime factors to verify.`
           };
         } else {
+          const p1 = [4, 6, 8, 10, 12][Math.floor(Math.random() * 5)];
+          const p2 = [5, 9, 15][Math.floor(Math.random() * 3)];
+          const ans = lcm(p1, p2);
           return {
-            text: `How many positive 3-digit integers are divisible by both 4 and 9?`,
-            ans: 25, // LCM(4,9)=36. 3-digit: 108 to 972 -> 25 multiples.
-            hint: "Find multiples of LCM(4, 9) = 36 between 100 and 999."
+            text: `Two lighthouse beacons flash periodically. One flashes every ${p1} seconds, the other every ${p2} seconds. If they flash together now, how many seconds until they flash together again?`,
+            ans: ans,
+            hint: `Find the Least Common Multiple (LCM) of ${p1} and ${p2}.`
           };
         }
-      } else {
-        // AMC 8 Level
-        const templates = [
-          {
-            text: "What is the remainder when 2^20 + 3 is divided by 5?",
-            ans: 4, // 2^20 ends in 6 -> 6+3=9 -> 9 mod 5 = 4
-            hint: "Find the unit digit cycle for powers of 2."
-          },
-          {
-            text: "How many positive integers less than 100 are divisible by 6 but NOT by 8?",
-            ans: 12, // multiples of 6: 16. multiples of 24: 4. 16-4 = 12.
-            hint: "Subtract the multiples of LCM(6,8)=24 from multiples of 6."
-          },
-          {
-            text: "Find the sum of digits of the smallest number divisible by 2, 3, 4, and 5.",
-            ans: 6, // LCM(2,3,4,5)=60 -> sum of digits = 6+0=6
-            hint: "Find the LCM first, then add its digits."
-          }
-        ];
-        return templates[Math.floor(Math.random() * templates.length)];
+
+      } else if (diff === 'medium') {
+        const type = Math.floor(Math.random() * 3);
+        if (type === 0) {
+          const d1 = Math.floor(Math.random() * 8) + 1;
+          const d2 = Math.floor(Math.random() * 8) + 1;
+          const d3 = Math.floor(Math.random() * 8) + 1;
+          const sum = d1 + d2 + d3;
+          let targetX = (9 - (sum % 9)) % 9;
+          return {
+            text: `Find the digit X such that the 4-digit number ${d1}${d2}X${d3} is divisible by 9.`,
+            ans: targetX,
+            hint: `The sum of the digits (${d1} + ${d2} + X + ${d3}) must be a multiple of 9.`
+          };
+        } else if (type === 1) {
+          const a = [3, 4, 5][Math.floor(Math.random() * 3)];
+          const b = [7, 8, 9][Math.floor(Math.random() * 3)];
+          const L = lcm(a, b);
+          const minM = Math.ceil(100 / L);
+          const maxM = Math.floor(999 / L);
+          const ans = maxM - minM + 1;
+          return {
+            text: `How many positive 3-digit integers are divisible by both ${a} and ${b}?`,
+            ans: ans,
+            hint: `Count the multiples of LCM(${a}, ${b}) = ${L} between 100 and 999.`
+          };
+        } else {
+          const a = Math.floor(Math.random() * 8) + 1;
+          const b = Math.floor(Math.random() * 8) + 1;
+          let targetX = (2 * b - a) % 11;
+          if (targetX < 0) targetX += 11;
+          if (targetX > 9) targetX = targetX - 11;
+          if (targetX < 0) targetX += 11;
+          return {
+            text: `Find the single digit X that makes the 4-digit number ${a}${b}X${b} divisible by 11.`,
+            ans: targetX,
+            hint: `The alternating digit sum (a - b + X - b) must be a multiple of 11.`
+          };
+        }
+
+      } else { // Advanced
+        const type = Math.floor(Math.random() * 4);
+        if (type === 0) {
+          const exp = Math.floor(Math.random() * 80) + 20;
+          const k = Math.floor(Math.random() * 4) + 1;
+          const powCycle = [6, 2, 4, 8];
+          const lastDigit = powCycle[exp % 4];
+          const ans = (lastDigit + k) % 5;
+          return {
+            text: `What is the remainder when (2^${exp} + ${k}) is divided by 5?`,
+            ans: ans,
+            hint: `Use the repeating units-digit pattern of powers of 2 (2, 4, 8, 6).`
+          };
+        } else if (type === 1) {
+          const divA = 6;
+          const divB = [8, 9, 15][Math.floor(Math.random() * 3)];
+          const common = lcm(divA, divB);
+          const maxVal = Math.floor(Math.random() * 50) + 100;
+          const multA = Math.floor(maxVal / divA);
+          const multAB = Math.floor(maxVal / common);
+          const ans = multA - multAB;
+          return {
+            text: `How many positive integers less than or equal to ${maxVal} are divisible by ${divA} but NOT by ${divB}?`,
+            ans: ans,
+            hint: `Subtract the multiples of LCM(${divA}, ${divB}) = ${common} from multiples of ${divA}.`
+          };
+        } else if (type === 2) {
+          const n1 = [12, 14, 15, 18][Math.floor(Math.random() * 4)];
+          const n2 = [20, 24, 30][Math.floor(Math.random() * 3)];
+          const val = lcm(n1, n2);
+          const ans = String(val).split('').reduce((acc, d) => acc + parseInt(d, 10), 0);
+          return {
+            text: `Find the sum of the digits of the Least Common Multiple (LCM) of ${n1} and ${n2}.`,
+            ans: ans,
+            hint: `Calculate LCM(${n1}, ${n2}) first, then sum its digits.`
+          };
+        } else {
+          const comp = [36, 45][Math.floor(Math.random() * 2)];
+          const mult = Math.floor(Math.random() * 15) + 5;
+          const product = mult * comp;
+          const str = String(product);
+          const hiddenIdx = Math.floor(Math.random() * (str.length - 1)) + 1;
+          const ansDigit = parseInt(str[hiddenIdx], 10);
+          const displayStr = str.substring(0, hiddenIdx) + 'X' + str.substring(hiddenIdx + 1);
+          return {
+            text: `The number ${displayStr} is divisible by ${comp}. Find the value of digit X.`,
+            ans: ansDigit,
+            hint: `A number divisible by ${comp} must be divisible by both ${comp === 36 ? '4 and 9' : '5 and 9'}.`
+          };
+        }
       }
     }
 
-    // Submit Answer & Execute Strike
     function submitAnswer() {
       const userAns = parseInt(document.getElementById('answerInput').value.trim(), 10);
       const feedback = document.getElementById('modalFeedback');
@@ -523,10 +583,9 @@
       }
     }
 
-    // Sonar Radar Ability
     function useSonar() {
       if (sonarLeft <= 0) return;
-      
+
       const r = Math.floor(Math.random() * GRID_SIZE);
       let shipInRow = 0;
       for (let c = 0; c < GRID_SIZE; c++) {
@@ -550,7 +609,6 @@
       logBox.prepend(entry);
     }
 
-    // Initialize on page load
     window.onload = resetGame;
   </script>
 </body>
