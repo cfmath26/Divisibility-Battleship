@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Divisibility Battleship</title>
+  <style>
+    :root {
+      --bg-color: #0d1b2a;
+      --panel-bg: #1b263b;
+      --accent-blue: #415a77;
+      --highlight: #00b4d8;
+      --text-color: #e0e1dd;
+      --hit-color: #e63946;
+      --miss-color: #457b9d;
+      --water-color: #1d3557;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin: 0 0 5px 0;
+      color: var(--highlight);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    p.subtitle {
+      margin: 0 0 20px 0;
+      color: #778da9;
+    }
+
+    /* Controls Bar */
+    .controls {
+      background: var(--panel-bg);
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    select, button {
+      background: var(--accent-blue);
+      color: var(--text-color);
+      border: 1px solid var(--highlight);
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: var(--highlight);
+      color: #000;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: #555;
+    }
+
+    /* Game Layout */
+    .game-container {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 1100px;
+      width: 100%;
+    }
+
+    /* Grid Setup */
+    .grid-panel {
+      background: var(--panel-bg);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 40px repeat(6, 60px);
+      grid-template-rows: 40px repeat(6, 60px);
+      gap: 4px;
+    }
+
+    .cell {
+      background-color: var(--water-color);
+      border-radius: 4px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s, background-color 0.2s;
+    }
+
+    .cell:hover:not(.header):not(.hit):not(.miss) {
+      transform: scale(1.05);
+      border: 2px solid var(--highlight);
+    }
+
+    .cell.header {
+      background-color: transparent;
+      color: #778da9;
+      cursor: default;
+    }
+
+    .cell.hit {
+      background-color: var(--hit-color);
+      cursor: default;
+    }
+
+    .cell.miss {
+      background-color: var(--miss-color);
+      cursor: default;
+    }
+
+    .cell.sonar {
+      border: 2px dashed #ffb703;
+      background-color: #2a9d8f;
+    }
+
+    /* Info & Log Panel */
+    .info-panel {
+      background: var(--panel-bg);
+      padding: 20px;
+      border-radius: 10px;
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      background: var(--bg-color);
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    .stat-box {
+      text-align: center;
+    }
+
+    .stat-val {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--highlight);
+    }
+
+    .stat-lbl {
+      font-size: 11px;
+      color: #778da9;
+    }
+
+    .log-box {
+      flex: 1;
+      background: var(--bg-color);
+      border-radius: 6px;
+      padding: 10px;
+      height: 250px;
+      overflow-y: auto;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .log-entry {
+      border-left: 3px solid var(--highlight);
+      padding-left: 6px;
+    }
+
+    .log-entry.hit { border-color: var(--hit-color); }
+    .log-entry.miss { border-color: var(--miss-color); }
+
+    /* Modal / Pop-up for Problems */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .modal {
+      background: var(--panel-bg);
+      padding: 25px;
+      border-radius: 10px;
+      max-width: 450px;
+      width: 90%;
+      border: 2px solid var(--highlight);
+      box-shadow: 0 0 20px rgba(0, 180, 216, 0.3);
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      color: var(--highlight);
+    }
+
+    .problem-text {
+      font-size: 16px;
+      line-height: 1.4;
+      margin-bottom: 15px;
+    }
+
+    .answer-input {
+      width: 100%;
+      padding: 10px;
+      background: var(--bg-color);
+      border: 1px solid var(--accent-blue);
+      color: #fff;
+      border-radius: 4px;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .feedback {
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .feedback.error { color: var(--hit-color); }
+    .feedback.success { color: #2a9d8f; }
+  </style>
+</head>
+<body>
+
+  <h1>Divisibility Battleship</h1>
+  <p class="subtitle">AoPS Prealgebra & AMC 8 Edition</p>
+
+  <div class="controls">
+    <label for="difficulty">Level:</label>
+    <select id="difficulty" onchange="resetGame()">
+      <option value="basic">Basic (Larson / Big Ideas)</option>
+      <option value="advanced">Advanced (AoPS Prealgebra)</option>
+      <option value="amc8" selected>Master (AMC 8)</option>
+    </select>
+
+    <button onclick="resetGame()">Refresh Board</button>
+    <button id="sonarBtn" onclick="useSonar()">Sonar Radar</button>
+  </div>
+
+  <div class="game-container">
+    <!-- Grid -->
+    <div class="grid-panel">
+      <div id="grid" class="grid"></div>
+    </div>
+
+    <!-- Stats & Log Panel -->
+    <div class="info-panel">
+      <div class="stats">
+        <div class="stat-box">
+          <div id="hitCount" class="stat-val">0</div>
+          <div class="stat-lbl">Hits</div>
+        </div>
+        <div class="stat-box">
+          <div id="missCount" class="stat-val">0</div>
+          <div class="stat-lbl">Misses</div>
+        </div>
+        <div class="stat-box">
+          <div id="sonarCount" class="stat-val">1</div>
+          <div class="stat-lbl">Sonar Left</div>
+        </div>
+      </div>
+
+      <div style="font-weight:bold; font-size:14px;">Battle Log</div>
+      <div id="log" class="log-box"></div>
+    </div>
+  </div>
+
+  <!-- Problem Modal -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal">
+      <h3 id="modalTitle">Fire Torpedo</h3>
+      <div id="problemText" class="problem-text"></div>
+      <input type="number" id="answerInput" class="answer-input" placeholder="Enter integer answer..." />
+      <button onclick="submitAnswer()">Launch Missile</button>
+      <div id="modalFeedback" class="feedback"></div>
+    </div>
+  </div>
+
+  <script>
+    const GRID_SIZE = 6;
+    let board = [];
+    let ships = [];
+    let hits = 0;
+    let misses = 0;
+    let sonarLeft = 1;
+    let activeCell = null;
+
+    const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+    // Initialize Game
+    function resetGame() {
+      hits = 0;
+      misses = 0;
+      sonarLeft = 1;
+      document.getElementById('hitCount').innerText = hits;
+      document.getElementById('missCount').innerText = misses;
+      document.getElementById('sonarCount').innerText = sonarLeft;
+      document.getElementById('log').innerHTML = '';
+
+      const diff = document.getElementById('difficulty').value;
+      const sonarBtn = document.getElementById('sonarBtn');
+      if (diff === 'basic') {
+        sonarBtn.disabled = true;
+        sonarBtn.title = 'Sonar is disabled in Basic Mode';
+      } else {
+        sonarBtn.disabled = false;
+        sonarBtn.title = '';
+      }
+
+      generateShips();
+      renderGrid();
+      addLog('New fleet deployed. Select a coordinate to target.');
+    }
+
+    // Place hidden ships on grid
+    function generateShips() {
+      board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false));
+      ships = [];
+
+      const shipLengths = [3, 2]; // 2 hidden ships
+      shipLengths.forEach(len => {
+        let placed = false;
+        while (!placed) {
+          let horiz = Math.random() < 0.5;
+          let r = Math.floor(Math.random() * (horiz ? GRID_SIZE : GRID_SIZE - len + 1));
+          let c = Math.floor(Math.random() * (horiz ? GRID_SIZE - len + 1 : GRID_SIZE));
+
+          let overlap = false;
+          for (let i = 0; i < len; i++) {
+            if (board[horiz ? r : r + i][horiz ? c + i : c]) overlap = true;
+          }
+
+          if (!overlap) {
+            for (let i = 0; i < len; i++) {
+              board[horiz ? r : r + i][horiz ? c + i : c] = true;
+            }
+            placed = true;
+          }
+        }
+      });
+    }
+
+    // Render HTML Grid
+    function renderGrid() {
+      const gridEl = document.getElementById('grid');
+      gridEl.innerHTML = '';
+
+      // Header top-left empty
+      const emptyHeader = document.createElement('div');
+      emptyHeader.className = 'cell header';
+      gridEl.appendChild(emptyHeader);
+
+      // Header numbers
+      for (let c = 1; c <= GRID_SIZE; c++) {
+        const header = document.createElement('div');
+        header.className = 'cell header';
+        header.innerText = c;
+        gridEl.appendChild(header);
+      }
+
+      // Grid Rows
+      for (let r = 0; r < GRID_SIZE; r++) {
+        // Row letter header
+        const rowHeader = document.createElement('div');
+        rowHeader.className = 'cell header';
+        rowHeader.innerText = rows[r];
+        gridEl.appendChild(rowHeader);
+
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.id = `cell-${r}-${c}`;
+          cell.innerText = `${rows[r]}${c + 1}`;
+          cell.onclick = () => handleCellClick(r, c);
+          gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    // Handle targeting a cell
+    function handleCellClick(r, c) {
+      const cellEl = document.getElementById(`cell-${r}-${c}`);
+      if (cellEl.classList.contains('hit') || cellEl.classList.contains('miss')) return;
+
+      activeCell = { r, c, question: generateProblem() };
+
+      document.getElementById('modalTitle').innerText = `Target Cell ${rows[r]}${c + 1}`;
+      document.getElementById('problemText').innerText = activeCell.question.text;
+      document.getElementById('answerInput').value = '';
+      document.getElementById('modalFeedback').innerText = '';
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    // Algorithmic Problem Generator (AMC 8 & AoPS Focused)
+    function generateProblem() {
+      const diff = document.getElementById('difficulty').value;
+
+      if (diff === 'basic') {
+        const randNum = Math.floor(Math.random() * 800) + 100;
+        const divisors = [3, 4, 5, 9, 10];
+        const div = divisors[Math.floor(Math.random() * divisors.length)];
+        const isDiv = randNum % div === 0;
+        return {
+          text: `Is the number ${randNum} divisible by ${div}? Enter 1 for Yes, 0 for No.`,
+          ans: isDiv ? 1 : 0,
+          hint: `Remember the rule for ${div}.`
+        };
+      } else if (diff === 'advanced') {
+        const type = Math.floor(Math.random() * 2);
+        if (type === 0) {
+          const mult = Math.floor(Math.random() * 40) + 10;
+          const ans = mult * 36;
+          return {
+            text: `Find the smallest digit X such that 3X42 is divisible by 9.`,
+            ans: 0, // 3+0+4+2 = 9
+            hint: "The sum of digits must be divisible by 9."
+          };
+        } else {
+          return {
+            text: `How many positive 3-digit integers are divisible by both 4 and 9?`,
+            ans: 25, // LCM(4,9)=36. 3-digit: 108 to 972 -> 25 multiples.
+            hint: "Find multiples of LCM(4, 9) = 36 between 100 and 999."
+          };
+        }
+      } else {
+        // AMC 8 Level
+        const templates = [
+          {
+            text: "What is the remainder when 2^20 + 3 is divided by 5?",
+            ans: 4, // 2^20 ends in 6 -> 6+3=9 -> 9 mod 5 = 4
+            hint: "Find the unit digit cycle for powers of 2."
+          },
+          {
+            text: "How many positive integers less than 100 are divisible by 6 but NOT by 8?",
+            ans: 12, // multiples of 6: 16. multiples of 24: 4. 16-4 = 12.
+            hint: "Subtract the multiples of LCM(6,8)=24 from multiples of 6."
+          },
+          {
+            text: "Find the sum of digits of the smallest number divisible by 2, 3, 4, and 5.",
+            ans: 6, // LCM(2,3,4,5)=60 -> sum of digits = 6+0=6
+            hint: "Find the LCM first, then add its digits."
+          }
+        ];
+        return templates[Math.floor(Math.random() * templates.length)];
+      }
+    }
+
+    // Submit Answer & Execute Strike
+    function submitAnswer() {
+      const userAns = parseInt(document.getElementById('answerInput').value.trim(), 10);
+      const feedback = document.getElementById('modalFeedback');
+
+      if (isNaN(userAns)) {
+        feedback.innerText = 'Please enter a valid integer.';
+        feedback.className = 'feedback error';
+        return;
+      }
+
+      if (userAns === activeCell.question.ans) {
+        document.getElementById('modalOverlay').classList.remove('active');
+        executeStrike(activeCell.r, activeCell.c);
+      } else {
+        feedback.innerText = `Incorrect! Hint: ${activeCell.question.hint}`;
+        feedback.className = 'feedback error';
+        addLog(`Misfire on ${rows[activeCell.r]}${activeCell.c + 1}! Incorrect solution.`, 'miss');
+      }
+    }
+
+    function executeStrike(r, c) {
+      const cellEl = document.getElementById(`cell-${r}-${c}`);
+      const isHit = board[r][c];
+
+      if (isHit) {
+        cellEl.classList.add('hit');
+        cellEl.innerText = '💥';
+        hits++;
+        document.getElementById('hitCount').innerText = hits;
+        addLog(`DIRECT HIT on ${rows[r]}${c + 1}!`, 'hit');
+      } else {
+        cellEl.classList.add('miss');
+        cellEl.innerText = '🌊';
+        misses++;
+        document.getElementById('missCount').innerText = misses;
+        addLog(`Splash! Miss at ${rows[r]}${c + 1}.`, 'miss');
+      }
+    }
+
+    // Sonar Radar Ability
+    function useSonar() {
+      if (sonarLeft <= 0) return;
+      
+      const r = Math.floor(Math.random() * GRID_SIZE);
+      let shipInRow = 0;
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (board[r][c]) shipInRow++;
+      }
+
+      sonarLeft--;
+      document.getElementById('sonarCount').innerText = sonarLeft;
+      addLog(`SONAR SCAN: Row ${rows[r]} contains ${shipInRow} ship cell(s).`);
+
+      if (sonarLeft === 0) {
+        document.getElementById('sonarBtn').disabled = true;
+      }
+    }
+
+    function addLog(msg, type = '') {
+      const logBox = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.innerText = msg;
+      logBox.prepend(entry);
+    }
+
+    // Initialize on page load
+    window.onload = resetGame;
+  </script>
+</body>
+</html>
